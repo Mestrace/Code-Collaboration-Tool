@@ -7,7 +7,7 @@ import rsa
 
 KEY_LENGTH = 1024
 BUFFER_SIZE = 1024
-SYSTEM_MESSAGE_PREFIX = "=="
+SYSTEM_MESSAGE_PREFIX = "SYSTEM"
 INVALID_NAME_MESSAGE = "The user name {0} is invalid, please try a new one"
 JOINED_CHAT_MESSAGE = "User {0} has joined the chat."
 LEFT_CHAT_MESSAGE = "User {0} has left the chat."
@@ -16,10 +16,11 @@ class Client:
     '''
     a abstract class that includes all informations that server needs to connect with the client
     '''
-    def __init__(self, name, socket, address):
+    def __init__(self, name, socket, address, aeskey):
         self.name = name
         self.socket = socket
         self.address = address
+        self.aeskey = aeskey
 
 
 def accept():
@@ -34,6 +35,7 @@ def accept():
 def welcome(socket, address):
     disconnect_cnt = 0
     connect_cnt = 2
+    # generate random aeskey of 16 
     aeskey = urandom(16)
     while connect_cnt != 0:
         # string data
@@ -49,7 +51,7 @@ def welcome(socket, address):
         elif connect_cnt == 1:
             name = decrypt_aes(aeskey, data)
             # TODO: name validation
-            clients[socket] = Client(name, socket, address)
+            clients[socket] = Client(name, socket, address, aeskey)
             broadcast(JOINED_CHAT_MESSAGE.format(name), SYSTEM_MESSAGE_PREFIX)
             connect_cnt -= 1
         else:
@@ -71,26 +73,27 @@ def session(name, socket, aeskey):
     while True:
         msg = decrypt_aes(socket.recv(BUFFER_SIZE), aeskey)
         if msg != bytes("{quit}", "utf-8"):
-             broadcast(msg, name + ": ")
+            broadcast(msg, name)
         else:
-            socket.send("Quitting")
+            send_aes_encrypted(socket, "Quitting", aeskey)
             socket.close()
             del clients[socket]
             broadcast(LEFT_CHAT_MESSAGE.format(name), SYSTEM_MESSAGE_PREFIX)
             break
     
-    
 
-# not implemented
 def broadcast(msg, prefix = ""):
     '''
     broadcast all messages to all the other clients
     '''
     for c in clients:
-        c.socket.send(bytes(prefix, "utf-8") + msg)
-    
-def is_valid_name(name):
-    return len(name) < 32
+        send_aes_encrypted(c.socket, prefix + ": " + msg, c.aeskey)
+
+def send_aes_encrypted(socket, msg, aeskey):
+    '''
+    send aes encrypted message to the given socket 
+    '''
+    socket.send(encrypt_aes(msg, aeskey))
 
 # the dictionary indexed by sockets and stores a Client typed client informations
 clients = {}

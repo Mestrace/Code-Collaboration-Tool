@@ -54,7 +54,7 @@ def aespadding(text, padding = ' '):
         return text
 
 
-def encrypt_aes(key,msg):
+def encrypt_aes(msg, key):
     '''
     encrypt the message using aes key
     '''
@@ -65,7 +65,7 @@ def encrypt_aes(key,msg):
     return base64.encodebytes(encrypt_aes)
 
 
-def decrypt_aes(key,msg):
+def decrypt_aes(msg, key):
     '''
     decrypt the message using aes key
     '''
