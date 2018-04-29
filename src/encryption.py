@@ -26,7 +26,7 @@ def encrypt_rsa(msg, pubkey):
     '''
     encrypt the message with a rsa public key
     '''
-    return rsa.encrypt(msg.encode(),pubkey)
+    return rsa.encrypt(msg.encode('utf-8'),pubkey)
 
 def decrypt_rsa(cryptedMessage, prikey):
     '''
@@ -68,10 +68,12 @@ def encrypt_aes(msg, key):
 def decrypt_aes(msg, key):
     '''
     decrypt the message using aes key
+    @msg string
+    @key aes key
     '''
     # initilize the decypter
     aes = AES.new(aespadding(key), AES.MODE_ECB)
     #decrypt to base_64
     base64_decrypted = base64.decodebytes(msg.encode(encoding='utf-8'))
-    #strip the \0 and return the decrypted string
-    return str(aes.decrypt(base64_decrypted),encoding='utf-8').rstrip('\0') # 
+    #strip the space and return the decrypted string
+    return str(aes.decrypt(base64_decrypted),encoding='utf-8').rstrip() # 

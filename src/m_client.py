@@ -6,6 +6,7 @@ import rsa
 
 KEY_LENGTH = 1024
 BUFFER_SIZE = 1024
+HOST = 5001
 
 
 
@@ -16,7 +17,8 @@ def receive(socket, aeskey):
     '''
     while True:
         try:
-            msg = decrypt_aes(socket.recv(BUFFER_SIZE), aeskey)
+            msg = socket.recv(BUFFER_SIZE)
+            msg = decrypt_aes(msg.decode('utf-8'), aeskey)
             print(msg)
         except OSError:
             break
@@ -45,21 +47,22 @@ def Main():
         user_name = input('Enter user name: ')
     
 
-    addr = ('127.0,0,1',5000)
+    addr = ('127.0,0,1',HOST)
 
     client_socket = socket(AF_INET, SOCK_STREAM)
-    client_socket.connect(('localhost',5000))
+    client_socket.connect(('localhost',HOST))
     public_key, private_key = rsa.newkeys(1024)
 
     # send public key
     client_socket.send(public_key.save_pkcs1())
-    aeskey = client_socket.recv(BUFFER_SIZE).decode()
+    aeskey = client_socket.recv(BUFFER_SIZE)
+    aeskey = decrypt_rsa(aeskey, private_key)
     # send name
     send_aes_encrypted(client_socket, user_name, aeskey)
     try:
-        recv_thread = Thread(target = receive, args=(client_socket, aeskey,))
+        recv_thread = Thread(target=receive, args=(client_socket, aeskey,))
         send_thread = Thread(target=send, args=((client_socket, aeskey,)))
-        send_thread.start()
+        recv_thread.start()
         send_thread.start()
     except KeyboardInterrupt:
         recv_thread.join()
